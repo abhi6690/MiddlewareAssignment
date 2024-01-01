@@ -1,4 +1,5 @@
-﻿using Grpc.Core;
+﻿using EventPublisher;
+using Grpc.Core;
 using GrpcOrderService.Dto;
 using Newtonsoft.Json;
 
@@ -10,10 +11,14 @@ namespace GrpcOrderService.Services
         private readonly string JsonResourcePath = "Data/orders.json";
         private readonly object LockObject = new object();
         private readonly List<OrderDto> Orders = new List<OrderDto>();
+        private readonly RabbitMQMessagePublisher _orderCreationMessagePublisher;
+        private readonly RabbitMQMessagePublisher _orderUpdationMessagePublisher;
 
-        public OrderService(ILogger<OrderService> logger)
+        public OrderService(ILogger<OrderService> logger, RabbitMQSetting rabbitMQSetting)
         {
             _logger = logger;
+            _orderCreationMessagePublisher = new RabbitMQMessagePublisher(rabbitMQSetting, "order_create_exchange", "fanout", "order_create_queue");
+            _orderUpdationMessagePublisher = new RabbitMQMessagePublisher(rabbitMQSetting, "order_update_exchange", "topic", "order_update_queue");
             LoadOrdersFromJsonFile();
         }
 
@@ -49,7 +54,10 @@ namespace GrpcOrderService.Services
                     // Save orders to the JSON file
                     SaveOrdersToJsonFile();
 
-                    var message = "Order placed successfully.";
+                    var message = $"Order placed successfully for order id: {newOrder.OrderId}.";
+
+                    //publish to notification 1 & 2.
+                    _orderCreationMessagePublisher.PublishMessage(message, "creation");
                     context.Status = new Status(StatusCode.OK, message);
                     return Task.FromResult(new OrderResponse
                     {
@@ -108,11 +116,14 @@ namespace GrpcOrderService.Services
 
                         SaveOrdersToJsonFile();
 
-                        var message = "Order updated successfully.";
+                        var message = $"Order updated successfully for order id: {request.OrderId}.";
+
+                        //publish to notification 2.
+                        _orderUpdationMessagePublisher.PublishMessage(message, "updation");
                         context.Status = new Status(StatusCode.OK, message);
                         return Task.FromResult(new OrderResponse { 
                             Success = true, 
-                            Message = "Order updated successfully.",
+                            Message = message,
                             OrderId = request.OrderId
                         });
                     }

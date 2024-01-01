@@ -15,7 +15,7 @@ public class ProductController : ControllerBase
     public ProductController(IConfiguration configuration)
     {
         // from launchSettings.json in GrpcOrderService.
-        var url = configuration["GrpcOrderService.ApplicationUrl"] ?? "https://localhost:7211";
+        var url = configuration["GrpcOrderService.ApplicationUrl"] ?? "http://localhost:5123";
         var channel = GrpcChannel.ForAddress(url);
         _orderClient = new Order.OrderClient(channel);
         LoadProducts();
@@ -62,7 +62,7 @@ public class ProductController : ControllerBase
         };
 
         var result = await _orderClient.PlaceOrderAsync(createOrderRequest);
-        return result.OrderId != 0 ? Ok(result.OrderId) : BadRequest(result.Message);
+        return result.OrderId != 0 ? Ok(result.Message) : BadRequest(result.Message);
     }
 
     [HttpPut("order/update-order")]
@@ -81,7 +81,7 @@ public class ProductController : ControllerBase
             ProductId = request.ProductId
         };
         var result = await _orderClient.UpdateOrderAsync(updateOrderRequest);
-        return result.OrderId != 0 ? Ok(result.OrderId) : BadRequest(result.Message);
+        return result.OrderId != 0 ? Ok(result.Message) : BadRequest(result.Message);
     }
 
     private void LoadProducts()
