@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcOrderService";
+
+package order;
+
+service Order {
+  rpc PlaceOrder (CreateOrderRequest) returns (OrderResponse);
+  rpc UpdateOrder (UpdateOrderRequest) returns (OrderResponse);
+}
+
+message CreateOrderRequest {  
+  ProductDetail productDetail = 1;
+  int32 quantity = 2;
+}
+
+message UpdateOrderRequest {  
+  int32 orderId = 1;
+  int32 productId = 2;
+  int32 quantity = 3;
+}
+
+message OrderResponse {
+    bool success = 1;
+    string message = 2;
+    int32 orderId = 3;
+}
+
+message ProductDetail {
+  int32 productId = 1;
+  string color = 2;
+  string description = 3;
+  float price = 4;
+}
